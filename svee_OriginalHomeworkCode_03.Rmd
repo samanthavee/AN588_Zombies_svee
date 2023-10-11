@@ -1,0 +1,275 @@
+---
+title: "AN588 Homework 03 (Fall 2023)"
+author: "Samantha Vee"
+date: "2023-10-06"
+output: rmdformats::readthedown
+
+---
+
+<center>
+![I scared myself after spending too much time looking at tv/movie zombies so here are Minecraft zombies instead](https://staticg.sportskeeda.com/editor/2021/07/1027b-16272959079713-800.jpg)
+</center>
+
+# Setting up
+Set working directory
+```{r set wd, eval = FALSE}
+setwd("~/Documents/GitHub/AN588_Zombies_svee")
+```
+
+Load packages
+```{r packages, message = FALSE}
+library(curl)
+library(tidyverse)
+```
+
+Load and preview dataset
+```{r load packages}
+f <- curl("https://raw.githubusercontent.com/fuzzyatelin/fuzzyatelin.github.io/master/AN588_Fall23/zombies.csv")
+zombie <- read.csv(f, header = TRUE)
+head(zombie)
+```
+
+# Homework Questions
+
+## Question 1
+Calculate the population mean and standard deviation for each quantitative random variable (height, weight, age, number of zombies killed, and years of education). NOTE: You will not want to use the built in var() and sd() commands as these are for samples.
+```{r q1a}
+# calculating population mean
+m.height <- mean(zombie$height); m.height
+m.weight <- mean(zombie$weight); m.weight
+m.age <- mean(zombie$age); m.age
+m.killed <- mean(zombie$zombies_killed); m.killed
+m.ed <- mean(zombie$years_of_education); m.ed
+```
+Population SD is the square root of the population variance (sum of squares/N)
+```{r q1b}
+# first i am making a function for my calculations
+pop_sd <- function(x) {sqrt(sum((x - mean(x))^2)/(length(x)))}
+
+# using the function to find population SD for each random variable
+psd.height <- pop_sd(zombie$height); psd.height
+psd.weight <- pop_sd(zombie$weight); psd.weight
+psd.age <- pop_sd(zombie$age); psd.age
+psd.killed <- pop_sd(zombie$zombies_killed); psd.killed
+psd.ed <- pop_sd(zombie$years_of_education); psd.ed
+```
+
+## Question 2
+Use {ggplot} to make boxplots of each of these variables by gender.
+```{r q2, message = FALSE}
+# loading this package so i can arrange ggplot graphs, it works like par(mfrow)
+library(egg)
+
+# making boxplots for each variable and grouping by gender
+plot_height <- ggplot(data = zombie, aes(x = gender, y = height, fill = gender)) + # calling dataset and axes
+                geom_boxplot(na.rm = TRUE, show.legend = FALSE) + # removing NA values and legend
+                xlab("Gender") + ylab("Height") + theme_bw() # labeling axes and adding bw theme
+
+plot_weight <- ggplot(data = zombie, aes(x = gender, y = weight, fill = gender)) + 
+                geom_boxplot(na.rm = TRUE, show.legend = FALSE) +
+                xlab("Gender") + ylab("Weight") + theme_bw()
+
+plot_age <- ggplot(data = zombie, aes(x = gender, y = age, fill = gender)) + 
+                geom_boxplot(na.rm = TRUE, show.legend = FALSE) +
+                xlab("Gender") + ylab("Age") + theme_bw()
+
+plot_killed <- ggplot(data = zombie, aes(x = gender, y = zombies_killed, fill = gender)) + 
+                geom_boxplot(na.rm = TRUE, show.legend = FALSE) +
+                xlab("Gender") + ylab("Zombies Killed") + theme_bw()
+
+plot_edu <- ggplot(data = zombie, aes(x = gender, y = years_of_education, fill = gender)) + 
+                geom_boxplot(na.rm = TRUE, show.legend = FALSE) +
+                xlab("Gender") + ylab("Years of Education") + theme_bw()
+
+ggarrange(plot_height, plot_weight, plot_age, plot_killed, plot_edu, ncol=2, nrow=3)
+
+```
+
+## Question 3
+Use {ggplot} to make scatterplots of height and weight in relation to age. Do these variables seem to be related? In what way?
+```{r q3}
+# we use geom_point to make scatter plots with ggplot! 
+height_age <- ggplot(data = zombie, aes(x = age, y = height)) + geom_point() +
+              xlab("Age") + ylab("Height") + theme_bw()
+
+weight_age <- ggplot(data = zombie, aes(x = age, y = weight)) + geom_point() +
+              xlab("Age") + ylab("Weight") + theme_bw()
+
+ggarrange(height_age, weight_age, ncol = 2, nrow = 1)
+```
+These variables look related! It looks like height and weight both increase as age increases. However, there is greater spread for the points related to weight and age.
+
+
+## Question 4
+Using histograms and Q-Q plots, check whether the quantitative variables seem to be drawn from a normal distribution. Which seem to be and which do not (hint: not all are drawn from the normal distribution)? For those that are not normal, can you determine from which common distribution they are drawn? <br>
+
+I'm first making histograms for each quantitative variable (height, weight, age, number zombies killed, and years of education) 
+```{r q4 histograms}
+par(mfrow = c(2, 3))
+hist(zombie$height, main = "Height")
+hist(zombie$weight, main = "Weight")
+hist(zombie$age, main = "Age")
+hist(zombie$zombies_killed, main = "Number of zombies killed") 
+hist(zombie$years_of_education, main = "Years of education")
+```
+
+The histograms on the second row for numbers of zombies killed and years of education don't look normally distributed. Their distribution is skewed towards the left and has a long tail. The rest of the histograms on the first row for weight, height, and age look normally distributed (?). The one for weight has a slightly longer tail on the right.
+
+Next, I'm assessing the same data using QQ plots
+```{r q4 qqplot}
+par(mfrow = c(2, 3))
+qqnorm(zombie$height, main = "Height"); qqline(zombie$height)
+qqnorm(zombie$weight, main = "Weight"); qqline(zombie$weight)
+qqnorm(zombie$age, main = "Age"); qqline(zombie$age)
+qqnorm(zombie$zombies_killed, main = "Number zombies killed"); qqline(zombie$zombies_killed)
+qqnorm(zombie$years_of_education, main = "Years of education"); qqline(zombie$years_of_education)
+```
+Height, weight, and age look normally distributed according to these qqplots. The second row with number of zombies killed and years of education don't look normally distributed. The step ladder shape comes from the fact that data from these variables are discrete and rounded, but the points do not fall along x=y. This looks like a Poisson distribution.
+
+## Question 5
+Now use the sample() function to sample ONE subset of 30 zombie survivors (without replacement) from this population and calculate the mean and sample standard deviation for each variable. Also estimate the standard error for each variable, and construct the 95% confidence interval for each mean. Note that for the variables that are not drawn from the normal distribution, you may need to base your estimate of the CIs on slightly different code than for the normal…
+
+[This link](https://www.statmethods.net/management/subset.html) helped me subset my data:
+```{r q5 sample}
+# taking my random sample of size 30 without replacement from original dataset
+set.seed(123)
+zombie_subset <- zombie[sample(1:nrow(zombie), 30, replace=FALSE),]
+head(zombie_subset)
+```
+
+**Calculating sample mean, sample standard deviation, standard error of the mean, and 95% confidence interval for each mean for the same variables again, starting with HEIGHT:**
+```{r q5 height}
+# calculating mean
+mean_height <- mean(zombie_subset$height); mean_height
+
+# calculating SD, we can use the built-in function this time because we're drawing from a sample! 
+sd_height <- sd(zombie_subset$height); mean_height
+
+# calculating standard error of the mean using the equation: sd/sqrt(n)
+sem_height <- sd_height/sqrt(length(zombie_subset$height)); sem_height
+
+# calculating 95% CIs with help from Module 9
+lower_h <- mean_height - qnorm(1 - 0.05/2) * sem_height  # (1-alpha)/2 each in upper and lower tails of distribution
+upper_h <- mean_height + qnorm(1 - 0.05/2) * sem_height  
+ci_height <- c(lower_h, upper_h); ci_height
+```
+
+**Doing the same for WEIGHT:**
+```{r q5 weight}
+mean_weight <- mean(zombie_subset$weight); mean_weight
+sd_weight <- sd(zombie_subset$weight); sd_weight
+sem_weight <- sd_weight/sqrt(length(zombie_subset$weight)); sem_weight
+lower_w <- mean_weight - qnorm(1 - 0.05/2) * sem_weight  # (1-alpha)/2 each in upper and lower tails of distribution
+upper_w <- mean_weight + qnorm(1 - 0.05/2) * sem_weight  
+ci_weight <- c(lower_w, upper_w); ci_weight
+```
+
+**Doing the same for AGE:**
+```{r q5 age}
+mean_age <- mean(zombie_subset$age); mean_age
+sd_age <- sd(zombie_subset$age); sd_age
+sem_age <- sd_age/sqrt(length(zombie_subset$age)); sem_age
+lower_a <- mean_age - qnorm(1 - 0.05/2) * sem_age  # (1-alpha)/2 each in upper and lower tails of distribution
+upper_a <- mean_age + qnorm(1 - 0.05/2) * sem_age
+ci_age <- c(lower_a, upper_a); ci_age
+```
+
+**Doing the same for NUMBER OF ZOMBIES KILLED:**
+```{r q5 zombies killed}
+mean_killed <- mean(zombie_subset$zombies_killed); mean_killed
+sd_killed <- sd(zombie_subset$zombies_killed); sd_killed
+sem_killed <- sd_killed/sqrt(length(zombie_subset$zombies_killed)); sem_killed
+
+# calculating upper and lower CIs - not sure if this is correct!! 
+poisson.test(length(zombie_subset$zombies_killed), conf.level = 0.95)
+```
+
+**Doing the same for YEARS OF EDUCATION:**
+```{r q5 years education}
+mean_edu <- mean(zombie_subset$years_of_education); mean_edu
+sd_edu <- sd(zombie_subset$years_of_education); sd_edu
+sem_edu <- sd_edu/sqrt(length(zombie_subset$years_of_education)); sem_edu
+
+# using same function as above - again, not sure if this is correct! 
+poisson.test(length(zombie_subset$years_of_education), conf.level = 0.95)
+```
+
+## Question 6
+Now draw 99 more random samples of 30 zombie apocalypse survivors, and calculate the mean for each variable for each of these samples. Together with the first sample you drew, you now have a set of 100 means for each variable (each based on 30 observations), which constitutes a sampling distribution for each variable. What are the means and standard deviations of this distribution of means for each variable? How do the standard deviations of means compare to the standard errors estimated in [5]? What do these sampling distributions look like (a graph might help here)? Are they normally distributed? What about for those variables that you concluded were not originally drawn from a normal distribution?
+```{r q6 attempt 1, warning=FALSE}
+set.seed(123)
+
+# making a dummy variable to hold each sample (?)
+s <- NULL 
+
+# for loop to draw 99 random samples of 30 survivors
+for (i in 1:100){
+  s[[i]] <- zombie[sample(1:nrow(zombie), 30, replace=FALSE),] 
+  # how to calculate mean for each variable?
+}
+
+# now calculating mean for each variable for each sample
+m <- NULL
+for (i in 1:100){
+  m[[i]] <- mean(s[[i]])
+}
+# this isn't working, i get a ridiculously long and aggressive error message
+```
+
+**I didn't have enough time to try to make this for loop work so I'm sampling and calculating means for each variable another way**
+```{r q6 attempt 2 sample}
+sample_height <- replicate(100, mean(sample(zombie$height, size = 30, replace = FALSE)))
+sample_weight <- replicate(100, mean(sample(zombie$weight, size = 30, replace = FALSE)))
+sample_age <- replicate(100, mean(sample(zombie$age, size = 30, replace = FALSE)))
+sample_kills <- replicate(100, mean(sample(zombie$zombies_killed, size = 30, replace = FALSE)))
+sample_edu <- replicate(100, mean(sample(zombie$years_of_education, size = 30, replace = FALSE)))
+```
+
+**Next, I'm calculating the mean for each variable**
+```{r q6 attempt 2 mean}
+# calculating means
+mean(sample_height)
+mean(sample_weight)
+mean(sample_age)
+mean(sample_kills)
+mean(sample_edu)
+```
+
+**And calculating standard deviations**
+```{r q6 attempt 2 SD}
+# calculating SDs
+sd(sample_height)
+sd(sample_weight)
+sd(sample_age)
+sd(sample_kills)
+sd(sample_edu)
+```
+The means are pretty much the same (give or take a few decimals) but the standard deviations are much smaller!
+
+**To see what the sampling distributions look like, I'm creating histograms for each variable**
+```{r q6 attempt 2 hist}
+par(mfrow = c(2, 3))
+hist(sample_height, main = "Height")
+hist(sample_weight, main = "Weight")
+hist(sample_age, main = "Age")
+hist(sample_kills, main = "Number of zombies killed") 
+hist(sample_edu, main = "Years of education")
+```
+
+**Also creating QQ plots for each variable**
+```{r q6 attempt 2 qq}
+par(mfrow = c(2, 3))
+qqnorm(sample_weight, main = "Weight"); qqline(sample_weight)
+qqnorm(sample_height, main = "Height"); qqline(sample_height)
+qqnorm(sample_age, main = "Age"); qqline(sample_age)
+qqnorm(sample_kills, main = "Number zombies killed"); qqline(sample_kills)
+qqnorm(sample_edu, main = "Years of education"); qqline(sample_edu)
+```
+Height, weight, and age look less normally distributed than before. Number of zombies killed and years of education look somewhat more normally distributed (less skewed to one side) but still not really.
+
+# Challenges Faced
+1. I was initially unable to use curl to load my dataset. I kept receiving an error message until I realized that I pasted the wrong link. I needed to paste the link to the raw data, not the link to github's preview of the .csv file. <br>
+2. Took me a while to look for equation for population SD, had to understand how it was different (mathematically) from sample SD and figure out how to turn it into a function that could be used for each variable <br>
+3. Some of the qqplots for question 4 looked like stepladders instead of a straight line, which confused me. I found out that this pattern comes from using discrete, rounded values. This checks out when looking at the data for numbers of zombies killed and years of education. I can still interpret the qqplot despite this different look. <br>
+4. I wasn't sure how to calculate the confidence intervals for the Poisson distributed variables (numbers of zombies killed and years of education). I did some googling and found this [link](https://stats.stackexchange.com/questions/10926/how-to-calculate-confidence-interval-for-count-data-in-r). I'm not sure if this is correct and would like to revisit this in class and see it done 'by hand'. <br>
+5. I couldn't figure out how to make a for loop to start off queston 6! I was able to create 100 random samples but I didn't know how to calculate the mean for each variable within the for loop. I didn't have enough time to figure this out so I used a different method.<br>
